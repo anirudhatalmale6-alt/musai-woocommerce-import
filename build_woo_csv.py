@@ -107,6 +107,13 @@ def load_models():
     return models
 
 
+# The 31 kids models (MODELCODE ending "-K") reuse their adult counterpart's
+# PRODUCTCODE/EAN in the source sheet. WooCommerce requires unique SKUs, so kids
+# variation SKUs are suffixed "-K" to disambiguate them from the adult product.
+def sku_for(model_code, product_code):
+    return f"{product_code}-K" if model_code.endswith("-K") else product_code
+
+
 def emit_model(w, model_code, variations):
     first = variations[0]
     name = clean(first[C_NAME]) or NAME_FALLBACK.get(model_code, model_code)
@@ -137,7 +144,7 @@ def emit_model(w, model_code, variations):
     if simple:
         v = variations[0]
         w.writerow({
-            "Type": "simple", "SKU": clean(v[C_SKU]), "Name": name,
+            "Type": "simple", "SKU": sku_for(model_code, clean(v[C_SKU])), "Name": name,
             "Published": 1, "Is featured?": 0, "Visibility in catalog": "visible",
             "Short description": "", "Description": description,
             "Tax status": "taxable", "In stock?": 1, "Backorders allowed?": 0,
@@ -174,7 +181,7 @@ def emit_model(w, model_code, variations):
         # variation description shows under the dropdowns when that size is selected
         var_desc = f"Dimensiuni: {measure_pretty(meas)}" if meas else ""
         w.writerow({
-            "Type": "variation", "SKU": clean(v[C_SKU]), "Name": "",
+            "Type": "variation", "SKU": sku_for(model_code, clean(v[C_SKU])), "Name": "",
             "Published": 1, "Is featured?": 0, "Visibility in catalog": "visible",
             "Short description": "", "Description": var_desc,
             "Tax status": "taxable", "In stock?": 1, "Backorders allowed?": 0,
