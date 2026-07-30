@@ -29,7 +29,7 @@ HEADER = [
     "Attribute 2 name","Attribute 2 value(s)","Attribute 2 visible","Attribute 2 global","Attribute 2 default",
     "Attribute 3 name","Attribute 3 value(s)","Attribute 3 visible","Attribute 3 global","Attribute 3 default",
     "Attribute 4 name","Attribute 4 value(s)","Attribute 4 visible","Attribute 4 global","Attribute 4 default",
-    "Meta: measures","Meta: ean",
+    "Meta: dimensions","Meta: ean",
 ]
 
 # column indexes in the source sheet
@@ -57,13 +57,14 @@ def dim_display(m):
 
 
 def measure_pretty(m):
-    """'[47cm]·[68cm]' -> '47 cm · 68 cm' for human-readable display."""
-    return (m.replace("[", "").replace("]", "")
-             .replace("cm", " cm").replace("·", " · ").replace("  ", " ").strip())
+    """'[34cm]·[90cm]' -> '34 * 90 cm' for human-readable display."""
+    parts = [p.replace("[", "").replace("]", "").replace("cm", "").strip()
+             for p in m.split("·") if p.strip()]
+    return " * ".join(parts) + " cm" if parts else ""
 
 
 def measures_table(size_measure):
-    """HTML size -> measurement table for the product description."""
+    """HTML size -> dimensions table for the product description."""
     if not size_measure:
         return ""
     rows = "".join(
@@ -72,10 +73,10 @@ def measures_table(size_measure):
         for s, m in size_measure.items()
     )
     return (
-        "<h4>Măsurători / Measurements</h4>"
+        "<h4>Dimensiuni</h4>"
         "<table style='border-collapse:collapse;margin:8px 0'>"
-        "<tr><th style='padding:4px 12px;border:1px solid #ddd;text-align:left'>Mărime / Size</th>"
-        "<th style='padding:4px 12px;border:1px solid #ddd;text-align:left'>Măsurători</th></tr>"
+        "<tr><th style='padding:4px 12px;border:1px solid #ddd;text-align:left'>Mărime</th>"
+        "<th style='padding:4px 12px;border:1px solid #ddd;text-align:left'>Dimensiuni</th></tr>"
         f"{rows}</table>"
     )
 
@@ -146,8 +147,8 @@ def emit_model(w, model_code, variations):
             "Attribute 1 name": "Size",  "Attribute 1 value(s)": clean(v[C_SIZE]),  "Attribute 1 visible": 1, "Attribute 1 global": 1, "Attribute 1 default": "",
             "Attribute 2 name": "Color", "Attribute 2 value(s)": clean(v[C_COLOR]), "Attribute 2 visible": 1, "Attribute 2 global": 1, "Attribute 2 default": "",
             "Attribute 3 name": "Gender","Attribute 3 value(s)": gender,            "Attribute 3 visible": 1, "Attribute 3 global": 1, "Attribute 3 default": "",
-            "Attribute 4 name": "Measures","Attribute 4 value(s)": dim_display(clean(v[C_MEAS])),"Attribute 4 visible": 1, "Attribute 4 global": 0, "Attribute 4 default": "",
-            "Meta: measures": clean(v[C_MEAS]), "Meta: ean": clean(v[C_EAN]),
+            "Attribute 4 name": "Dimensiuni","Attribute 4 value(s)": dim_display(clean(v[C_MEAS])),"Attribute 4 visible": 1, "Attribute 4 global": 0, "Attribute 4 default": "",
+            "Meta: dimensions": clean(v[C_MEAS]), "Meta: ean": clean(v[C_EAN]),
         })
         return
 
@@ -163,15 +164,15 @@ def emit_model(w, model_code, variations):
         "Attribute 1 name": "Size",  "Attribute 1 value(s)": ", ".join(sizes),  "Attribute 1 visible": 1, "Attribute 1 global": 1, "Attribute 1 default": "",
         "Attribute 2 name": "Color", "Attribute 2 value(s)": ", ".join(colors), "Attribute 2 visible": 1, "Attribute 2 global": 1, "Attribute 2 default": "",
         "Attribute 3 name": "Gender","Attribute 3 value(s)": gender,            "Attribute 3 visible": 1, "Attribute 3 global": 1, "Attribute 3 default": "",
-        "Attribute 4 name": "Measures","Attribute 4 value(s)": ", ".join(dim_display(m) for m in measures),"Attribute 4 visible": 1, "Attribute 4 global": 0, "Attribute 4 default": "",
-        "Meta: measures": "", "Meta: ean": "",
+        "Attribute 4 name": "Dimensiuni","Attribute 4 value(s)": ", ".join(dim_display(m) for m in measures),"Attribute 4 visible": 1, "Attribute 4 global": 0, "Attribute 4 default": "",
+        "Meta: dimensions": "", "Meta: ean": "",
     })
 
     # variations
     for i, v in enumerate(variations, start=1):
         meas = clean(v[C_MEAS])
         # variation description shows under the dropdowns when that size is selected
-        var_desc = f"Măsurători: {measure_pretty(meas)}" if meas else ""
+        var_desc = f"Dimensiuni: {measure_pretty(meas)}" if meas else ""
         w.writerow({
             "Type": "variation", "SKU": clean(v[C_SKU]), "Name": "",
             "Published": 1, "Is featured?": 0, "Visibility in catalog": "visible",
@@ -184,7 +185,7 @@ def emit_model(w, model_code, variations):
             "Attribute 2 name": "Color", "Attribute 2 value(s)": clean(v[C_COLOR]), "Attribute 2 visible": "", "Attribute 2 global": 1, "Attribute 2 default": "",
             "Attribute 3 name": "", "Attribute 3 value(s)": "", "Attribute 3 visible": "", "Attribute 3 global": "", "Attribute 3 default": "",
             "Attribute 4 name": "", "Attribute 4 value(s)": "", "Attribute 4 visible": "", "Attribute 4 global": "", "Attribute 4 default": "",
-            "Meta: measures": meas, "Meta: ean": clean(v[C_EAN]),
+            "Meta: dimensions": meas, "Meta: ean": clean(v[C_EAN]),
         })
 
 
