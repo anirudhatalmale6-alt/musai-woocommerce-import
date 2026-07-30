@@ -48,6 +48,14 @@ def dedup(seq):
     return list(OrderedDict.fromkeys(x for x in seq if x))
 
 
+# WooCommerce importer splits multi-value attribute cells on COMMA. Size/Color/Gender
+# contain no commas, so we join with ", ". Dimensions use EU decimals ("11,5cm") -> the
+# comma would wrongly split them, so normalise to "." for the display attribute only
+# (the per-variation Meta: dimensions keeps the original value untouched).
+def dim_display(m):
+    return m.replace(",", ".")
+
+
 def build_description(r):
     """Assemble an HTML product description from description / composition / observation."""
     parts = []
@@ -78,12 +86,13 @@ def emit_model(w, model_code, variations):
     first = variations[0]
     name = clean(first[C_NAME]) or NAME_FALLBACK.get(model_code, model_code)
     categories = clean(first[C_CAT])
-    gender = clean(first[C_GENDER])
     description = build_description(first)
 
     sizes = dedup(clean(v[C_SIZE]) for v in variations)
     colors = dedup(clean(v[C_COLOR]) for v in variations)
     measures = dedup(clean(v[C_MEAS]) for v in variations)
+    genders = dedup(clean(v[C_GENDER]) for v in variations)
+    gender = ", ".join(genders)
 
     # gallery: model shots + product shots, unique, in order of appearance
     gallery = dedup([clean(v[C_MODIMG]) for v in variations] +
@@ -104,7 +113,7 @@ def emit_model(w, model_code, variations):
             "Attribute 1 name": "Size",  "Attribute 1 value(s)": clean(v[C_SIZE]),  "Attribute 1 visible": 1, "Attribute 1 global": 1, "Attribute 1 default": "",
             "Attribute 2 name": "Color", "Attribute 2 value(s)": clean(v[C_COLOR]), "Attribute 2 visible": 1, "Attribute 2 global": 1, "Attribute 2 default": "",
             "Attribute 3 name": "Gender","Attribute 3 value(s)": gender,            "Attribute 3 visible": 1, "Attribute 3 global": 1, "Attribute 3 default": "",
-            "Attribute 4 name": "Dimensions","Attribute 4 value(s)": clean(v[C_MEAS]),"Attribute 4 visible": 1, "Attribute 4 global": 0, "Attribute 4 default": "",
+            "Attribute 4 name": "Dimensions","Attribute 4 value(s)": dim_display(clean(v[C_MEAS])),"Attribute 4 visible": 1, "Attribute 4 global": 0, "Attribute 4 default": "",
             "Meta: dimensions": clean(v[C_MEAS]), "Meta: ean": clean(v[C_EAN]),
         })
         return
@@ -118,10 +127,10 @@ def emit_model(w, model_code, variations):
         "Sold individually?": 0, "Regular price": "",
         "Categories": categories, "Tags": clean(first[C_MAKER]),
         "Images": ",".join(gallery), "Parent": "", "Position": 0,
-        "Attribute 1 name": "Size",  "Attribute 1 value(s)": " | ".join(sizes),  "Attribute 1 visible": 1, "Attribute 1 global": 1, "Attribute 1 default": "",
-        "Attribute 2 name": "Color", "Attribute 2 value(s)": " | ".join(colors), "Attribute 2 visible": 1, "Attribute 2 global": 1, "Attribute 2 default": "",
-        "Attribute 3 name": "Gender","Attribute 3 value(s)": gender,             "Attribute 3 visible": 1, "Attribute 3 global": 1, "Attribute 3 default": "",
-        "Attribute 4 name": "Dimensions","Attribute 4 value(s)": " | ".join(measures),"Attribute 4 visible": 1, "Attribute 4 global": 0, "Attribute 4 default": "",
+        "Attribute 1 name": "Size",  "Attribute 1 value(s)": ", ".join(sizes),  "Attribute 1 visible": 1, "Attribute 1 global": 1, "Attribute 1 default": "",
+        "Attribute 2 name": "Color", "Attribute 2 value(s)": ", ".join(colors), "Attribute 2 visible": 1, "Attribute 2 global": 1, "Attribute 2 default": "",
+        "Attribute 3 name": "Gender","Attribute 3 value(s)": gender,            "Attribute 3 visible": 1, "Attribute 3 global": 1, "Attribute 3 default": "",
+        "Attribute 4 name": "Dimensions","Attribute 4 value(s)": ", ".join(dim_display(m) for m in measures),"Attribute 4 visible": 1, "Attribute 4 global": 0, "Attribute 4 default": "",
         "Meta: dimensions": "", "Meta: ean": "",
     })
 
